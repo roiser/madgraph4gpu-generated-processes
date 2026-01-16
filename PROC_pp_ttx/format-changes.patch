@@ -1,0 +1,284 @@
+--- src/mgOnGpuConfig.h	2026-01-16 16:27:03.404345463 +0000
++++ -	2026-01-16 16:27:06.570030805 +0000
+@@ -180,7 +180,7 @@
+ #if defined MGONGPU_FPTYPE_DOUBLE
+   typedef double fptype; // double precision (8 bytes, fp64)
+ #elif defined MGONGPU_FPTYPE_FLOAT
+-  typedef float fptype;  // single precision (4 bytes, fp32)
++  typedef float fptype; // single precision (4 bytes, fp32)
+ #endif
+ 
+   // Floating point type (for color algebra alone #537): fptype2
+
+--- src/mgOnGpuVectors.h	2026-01-16 16:27:03.324345508 +0000
++++ -	2026-01-16 16:27:06.762097824 +0000
+@@ -123,7 +123,7 @@
+ #if defined MGONGPU_FPTYPE_DOUBLE
+   typedef long int bool_v __attribute__( ( ext_vector_type( neppV ) ) ); // bbbb
+ #elif defined MGONGPU_FPTYPE_FLOAT
+-  typedef int bool_v __attribute__( ( ext_vector_type( neppV ) ) );                         // bbbb
++  typedef int bool_v __attribute__( ( ext_vector_type( neppV ) ) ); // bbbb
+ #endif
+ #else // gcc
+   typedef unsigned int uint_v __attribute__( ( vector_size( neppV * sizeof( unsigned int ) ) ) );
+
+--- SubProcesses/P1_uux_ttx/color_sum.cc	2026-01-16 16:27:03.404345463 +0000
++++ -	2026-01-16 16:27:07.444786479 +0000
+@@ -379,20 +379,20 @@
+ 
+ #ifdef MGONGPUCPP_GPUIMPL
+   void
+-  color_sum_gpu( fptype* ghelAllMEs,               // output: allMEs super-buffer for nGoodHel <= ncomb individual helicities (index is ighel)
+-                 const fptype* ghelAllJamps,       // input: allJamps super-buffer[2][ncol][nGoodHel][nevt] for nGoodHel <= ncomb individual helicities
+-                 fptype2* ghelAllBlasTmp,          // tmp: allBlasTmp super-buffer for nGoodHel <= ncomb individual helicities
+-                 gpuBlasHandle_t* pBlasHandle,     // input: cuBLAS/hipBLAS handle
+-                 gpuStream_t* ghelStreams,         // input: cuda streams (index is ighel: only the first nGoodHel <= ncomb are non-null)
+-                 const int nGoodHel,               // input: number of good helicities
+-                 const int gpublocks,              // input: cuda gpublocks
+-                 const int gputhreads )            // input: cuda gputhreads
++  color_sum_gpu( fptype* ghelAllMEs,           // output: allMEs super-buffer for nGoodHel <= ncomb individual helicities (index is ighel)
++                 const fptype* ghelAllJamps,   // input: allJamps super-buffer[2][ncol][nGoodHel][nevt] for nGoodHel <= ncomb individual helicities
++                 fptype2* ghelAllBlasTmp,      // tmp: allBlasTmp super-buffer for nGoodHel <= ncomb individual helicities
++                 gpuBlasHandle_t* pBlasHandle, // input: cuBLAS/hipBLAS handle
++                 gpuStream_t* ghelStreams,     // input: cuda streams (index is ighel: only the first nGoodHel <= ncomb are non-null)
++                 const int nGoodHel,           // input: number of good helicities
++                 const int gpublocks,          // input: cuda gpublocks
++                 const int gputhreads )        // input: cuda gputhreads
+   {
+     const int nevt = gpublocks * gputhreads;
+     // CASE 1: KERNEL
+     if( !pBlasHandle )
+     {
+-      assert( ghelAllBlasTmp == nullptr );  // sanity check for HASBLAS=hasNoBlas or CUDACPP_RUNTIME_BLASCOLORSUM not set
++      assert( ghelAllBlasTmp == nullptr ); // sanity check for HASBLAS=hasNoBlas or CUDACPP_RUNTIME_BLASCOLORSUM not set
+       // Loop over helicities
+       for( int ighel = 0; ighel < nGoodHel; ighel++ )
+       {
+@@ -409,13 +409,13 @@
+       assert( false ); // sanity check: no path to this statement for HASBLAS=hasNoBlas
+ #else
+       checkGpu( gpuDeviceSynchronize() ); // do not start the BLAS color sum for all helicities until the loop over helicities has completed
+-      // Reset the tmp buffer
++                                          // Reset the tmp buffer
+ #if defined MGONGPU_FPTYPE_DOUBLE and defined MGONGPU_FPTYPE2_FLOAT
+       gpuMemset( ghelAllBlasTmp, 0, nGoodHel * nevt * ( 2 * ncolor * mgOnGpu::nx2 + 1 ) * sizeof( fptype2 ) );
+ #else
+       gpuMemset( ghelAllBlasTmp, 0, nGoodHel * nevt * ( ncolor * mgOnGpu::nx2 ) * sizeof( fptype2 ) );
+ #endif
+-      // Delegate the color sum to BLAS for 
++      // Delegate the color sum to BLAS for
+       color_sum_blas( ghelAllMEs, ghelAllJamps, ghelAllBlasTmp, pBlasHandle, ghelStreams, nGoodHel, gpublocks, gputhreads );
+ #endif
+     }
+
+--- SubProcesses/P1_uux_ttx/CPPProcess.cc	2026-01-16 16:27:03.403345464 +0000
++++ -	2026-01-16 16:27:07.520655456 +0000
+@@ -735,11 +735,11 @@
+                        const fptype* allcouplings, // input: couplings[nevt*ndcoup*2]
+                        fptype* allMEs,             // output: allMEs[nevt], |M|^2 final_avg_over_helicities
+ #ifdef MGONGPU_SUPPORTS_MULTICHANNEL
+-                       fptype* allNumerators,      // output: multichannel numerators[nevt], running_sum_over_helicities
+-                       fptype* allDenominators,    // output: multichannel denominators[nevt], running_sum_over_helicities
++                       fptype* allNumerators,   // output: multichannel numerators[nevt], running_sum_over_helicities
++                       fptype* allDenominators, // output: multichannel denominators[nevt], running_sum_over_helicities
+ #endif
+-                       bool* isGoodHel,            // output: isGoodHel[ncomb] - host array
+-                       const int nevt )            // input: #events (for cuda: nevt == ndim == gpublocks*gputhreads)
++                       bool* isGoodHel, // output: isGoodHel[ncomb] - host array
++                       const int nevt ) // input: #events (for cuda: nevt == ndim == gpublocks*gputhreads)
+   {
+     //assert( (size_t)(allmomenta) % mgOnGpu::cppAlign == 0 ); // SANITY CHECK: require SIMD-friendly alignment [COMMENT OUT TO TEST MISALIGNED ACCESS]
+     //assert( (size_t)(allMEs) % mgOnGpu::cppAlign == 0 ); // SANITY CHECK: require SIMD-friendly alignment [COMMENT OUT TO TEST MISALIGNED ACCESS]
+@@ -780,11 +780,11 @@
+ #endif
+         }
+         constexpr fptype_sv* jamp2_sv = nullptr; // no need for color selection during helicity filtering
+-        //std::cout << "sigmaKin_getGoodHel ihel=" << ihel << ( isGoodHel[ihel] ? " true" : " false" ) << std::endl;
++                                                 //std::cout << "sigmaKin_getGoodHel ihel=" << ihel << ( isGoodHel[ihel] ? " true" : " false" ) << std::endl;
+ #if defined MGONGPU_CPPSIMD and defined MGONGPU_FPTYPE_DOUBLE and defined MGONGPU_FPTYPE2_FLOAT
+         cxtype_sv jamp_sv[2 * ncolor] = {}; // all zeros
+ #else
+-        cxtype_sv jamp_sv[ncolor] = {};  // all zeros
++        cxtype_sv jamp_sv[ncolor] = {}; // all zeros
+ #endif
+ #ifdef MGONGPU_SUPPORTS_MULTICHANNEL /* clang-format off */
+         constexpr unsigned int channelId = 0; // disable multichannel single-diagram enhancement
+@@ -1121,7 +1121,7 @@
+     assert( npagV % 2 == 0 );     // SANITY CHECK for mixed fptypes: two neppV-pages are merged to one 2*neppV-page
+     const int npagV2 = npagV / 2; // loop on two SIMD pages (neppV events) at a time
+ #else
+-    const int npagV2 = npagV;            // loop on one SIMD page (neppV events) at a time
++    const int npagV2 = npagV; // loop on one SIMD page (neppV events) at a time
+ #endif
+ #ifdef _OPENMP
+     // OMP multithreading #575 (NB: tested only with gcc11 so far)
+@@ -1184,7 +1184,7 @@
+       // Running sum of partial amplitudes squared for event by event color selection (#402)
+       // (jamp2[nParity][ncolor][neppV] for the SIMD vector - or the two SIMD vectors - of events processed in calculate_jamps)
+       fptype_sv jamp2_sv[nParity * ncolor] = {};
+-      fptype_sv MEs_ighel[ncomb] = {};  // sum of MEs for all good helicities up to ighel (for the first - and/or only - neppV page)
++      fptype_sv MEs_ighel[ncomb] = {}; // sum of MEs for all good helicities up to ighel (for the first - and/or only - neppV page)
+ #if defined MGONGPU_CPPSIMD and defined MGONGPU_FPTYPE_DOUBLE and defined MGONGPU_FPTYPE2_FLOAT
+       fptype_sv MEs_ighel2[ncomb] = {}; // sum of MEs for all good helicities up to ighel (for the second neppV page)
+ #endif
+
+--- SubProcesses/P1_uux_ttx/check_sa.cc	2026-01-16 16:27:03.403345464 +0000
++++ -	2026-01-16 16:27:07.849375035 +0000
+@@ -135,7 +135,7 @@
+ #ifdef MGONGPUCPP_GPUIMPL
+   RamboSamplingMode rmbsmp = RamboSamplingMode::RamboDevice; // default on GPU
+ #else
+-  RamboSamplingMode rmbsmp = RamboSamplingMode::RamboHost;   // default on CPU
++  RamboSamplingMode rmbsmp = RamboSamplingMode::RamboHost; // default on CPU
+ #endif
+   // Bridge emulation mode (NB Bridge implies RamboHost!)
+   bool bridge = false;
+@@ -918,7 +918,7 @@
+   wrkflwtxt += "/sse4";
+ #endif
+ #else
+-  wrkflwtxt += "/????";                                           // no path to this statement
++  wrkflwtxt += "/????"; // no path to this statement
+ #endif
+   // -- Has cxtype_v::operator[] bracket with non-const reference?
+ #if defined MGONGPU_CPPSIMD
+@@ -1143,7 +1143,7 @@
+ #elif defined MGONGPU_CUCXTYPE_STDCOMPLEX
+              << "\"STD::COMPLEX\"," << std::endl
+ #else
+-             << "\"???\"," << std::endl                           // no path to this statement...
++             << "\"???\"," << std::endl // no path to this statement...
+ #endif
+              << "\"RanNumb memory layout\": "
+              << "\"AOSOA[" << neppR << "]\""
+
+--- SubProcesses/P1_gg_ttx/color_sum.cc	2026-01-16 16:27:03.356345490 +0000
++++ -	2026-01-16 16:27:08.264139453 +0000
+@@ -379,20 +379,20 @@
+ 
+ #ifdef MGONGPUCPP_GPUIMPL
+   void
+-  color_sum_gpu( fptype* ghelAllMEs,               // output: allMEs super-buffer for nGoodHel <= ncomb individual helicities (index is ighel)
+-                 const fptype* ghelAllJamps,       // input: allJamps super-buffer[2][ncol][nGoodHel][nevt] for nGoodHel <= ncomb individual helicities
+-                 fptype2* ghelAllBlasTmp,          // tmp: allBlasTmp super-buffer for nGoodHel <= ncomb individual helicities
+-                 gpuBlasHandle_t* pBlasHandle,     // input: cuBLAS/hipBLAS handle
+-                 gpuStream_t* ghelStreams,         // input: cuda streams (index is ighel: only the first nGoodHel <= ncomb are non-null)
+-                 const int nGoodHel,               // input: number of good helicities
+-                 const int gpublocks,              // input: cuda gpublocks
+-                 const int gputhreads )            // input: cuda gputhreads
++  color_sum_gpu( fptype* ghelAllMEs,           // output: allMEs super-buffer for nGoodHel <= ncomb individual helicities (index is ighel)
++                 const fptype* ghelAllJamps,   // input: allJamps super-buffer[2][ncol][nGoodHel][nevt] for nGoodHel <= ncomb individual helicities
++                 fptype2* ghelAllBlasTmp,      // tmp: allBlasTmp super-buffer for nGoodHel <= ncomb individual helicities
++                 gpuBlasHandle_t* pBlasHandle, // input: cuBLAS/hipBLAS handle
++                 gpuStream_t* ghelStreams,     // input: cuda streams (index is ighel: only the first nGoodHel <= ncomb are non-null)
++                 const int nGoodHel,           // input: number of good helicities
++                 const int gpublocks,          // input: cuda gpublocks
++                 const int gputhreads )        // input: cuda gputhreads
+   {
+     const int nevt = gpublocks * gputhreads;
+     // CASE 1: KERNEL
+     if( !pBlasHandle )
+     {
+-      assert( ghelAllBlasTmp == nullptr );  // sanity check for HASBLAS=hasNoBlas or CUDACPP_RUNTIME_BLASCOLORSUM not set
++      assert( ghelAllBlasTmp == nullptr ); // sanity check for HASBLAS=hasNoBlas or CUDACPP_RUNTIME_BLASCOLORSUM not set
+       // Loop over helicities
+       for( int ighel = 0; ighel < nGoodHel; ighel++ )
+       {
+@@ -409,13 +409,13 @@
+       assert( false ); // sanity check: no path to this statement for HASBLAS=hasNoBlas
+ #else
+       checkGpu( gpuDeviceSynchronize() ); // do not start the BLAS color sum for all helicities until the loop over helicities has completed
+-      // Reset the tmp buffer
++                                          // Reset the tmp buffer
+ #if defined MGONGPU_FPTYPE_DOUBLE and defined MGONGPU_FPTYPE2_FLOAT
+       gpuMemset( ghelAllBlasTmp, 0, nGoodHel * nevt * ( 2 * ncolor * mgOnGpu::nx2 + 1 ) * sizeof( fptype2 ) );
+ #else
+       gpuMemset( ghelAllBlasTmp, 0, nGoodHel * nevt * ( ncolor * mgOnGpu::nx2 ) * sizeof( fptype2 ) );
+ #endif
+-      // Delegate the color sum to BLAS for 
++      // Delegate the color sum to BLAS for
+       color_sum_blas( ghelAllMEs, ghelAllJamps, ghelAllBlasTmp, pBlasHandle, ghelStreams, nGoodHel, gpublocks, gputhreads );
+ #endif
+     }
+
+--- SubProcesses/P1_gg_ttx/CPPProcess.cc	2026-01-16 16:27:03.355345491 +0000
++++ -	2026-01-16 16:27:08.345094682 +0000
+@@ -758,11 +758,11 @@
+                        const fptype* allcouplings, // input: couplings[nevt*ndcoup*2]
+                        fptype* allMEs,             // output: allMEs[nevt], |M|^2 final_avg_over_helicities
+ #ifdef MGONGPU_SUPPORTS_MULTICHANNEL
+-                       fptype* allNumerators,      // output: multichannel numerators[nevt], running_sum_over_helicities
+-                       fptype* allDenominators,    // output: multichannel denominators[nevt], running_sum_over_helicities
++                       fptype* allNumerators,   // output: multichannel numerators[nevt], running_sum_over_helicities
++                       fptype* allDenominators, // output: multichannel denominators[nevt], running_sum_over_helicities
+ #endif
+-                       bool* isGoodHel,            // output: isGoodHel[ncomb] - host array
+-                       const int nevt )            // input: #events (for cuda: nevt == ndim == gpublocks*gputhreads)
++                       bool* isGoodHel, // output: isGoodHel[ncomb] - host array
++                       const int nevt ) // input: #events (for cuda: nevt == ndim == gpublocks*gputhreads)
+   {
+     //assert( (size_t)(allmomenta) % mgOnGpu::cppAlign == 0 ); // SANITY CHECK: require SIMD-friendly alignment [COMMENT OUT TO TEST MISALIGNED ACCESS]
+     //assert( (size_t)(allMEs) % mgOnGpu::cppAlign == 0 ); // SANITY CHECK: require SIMD-friendly alignment [COMMENT OUT TO TEST MISALIGNED ACCESS]
+@@ -803,11 +803,11 @@
+ #endif
+         }
+         constexpr fptype_sv* jamp2_sv = nullptr; // no need for color selection during helicity filtering
+-        //std::cout << "sigmaKin_getGoodHel ihel=" << ihel << ( isGoodHel[ihel] ? " true" : " false" ) << std::endl;
++                                                 //std::cout << "sigmaKin_getGoodHel ihel=" << ihel << ( isGoodHel[ihel] ? " true" : " false" ) << std::endl;
+ #if defined MGONGPU_CPPSIMD and defined MGONGPU_FPTYPE_DOUBLE and defined MGONGPU_FPTYPE2_FLOAT
+         cxtype_sv jamp_sv[2 * ncolor] = {}; // all zeros
+ #else
+-        cxtype_sv jamp_sv[ncolor] = {};  // all zeros
++        cxtype_sv jamp_sv[ncolor] = {}; // all zeros
+ #endif
+ #ifdef MGONGPU_SUPPORTS_MULTICHANNEL /* clang-format off */
+         constexpr unsigned int channelId = 0; // disable multichannel single-diagram enhancement
+@@ -1144,7 +1144,7 @@
+     assert( npagV % 2 == 0 );     // SANITY CHECK for mixed fptypes: two neppV-pages are merged to one 2*neppV-page
+     const int npagV2 = npagV / 2; // loop on two SIMD pages (neppV events) at a time
+ #else
+-    const int npagV2 = npagV;            // loop on one SIMD page (neppV events) at a time
++    const int npagV2 = npagV; // loop on one SIMD page (neppV events) at a time
+ #endif
+ #ifdef _OPENMP
+     // OMP multithreading #575 (NB: tested only with gcc11 so far)
+@@ -1207,7 +1207,7 @@
+       // Running sum of partial amplitudes squared for event by event color selection (#402)
+       // (jamp2[nParity][ncolor][neppV] for the SIMD vector - or the two SIMD vectors - of events processed in calculate_jamps)
+       fptype_sv jamp2_sv[nParity * ncolor] = {};
+-      fptype_sv MEs_ighel[ncomb] = {};  // sum of MEs for all good helicities up to ighel (for the first - and/or only - neppV page)
++      fptype_sv MEs_ighel[ncomb] = {}; // sum of MEs for all good helicities up to ighel (for the first - and/or only - neppV page)
+ #if defined MGONGPU_CPPSIMD and defined MGONGPU_FPTYPE_DOUBLE and defined MGONGPU_FPTYPE2_FLOAT
+       fptype_sv MEs_ighel2[ncomb] = {}; // sum of MEs for all good helicities up to ighel (for the second neppV page)
+ #endif
+
+--- SubProcesses/P1_gg_ttx/check_sa.cc	2026-01-16 16:27:03.355345491 +0000
++++ -	2026-01-16 16:27:08.689472366 +0000
+@@ -135,7 +135,7 @@
+ #ifdef MGONGPUCPP_GPUIMPL
+   RamboSamplingMode rmbsmp = RamboSamplingMode::RamboDevice; // default on GPU
+ #else
+-  RamboSamplingMode rmbsmp = RamboSamplingMode::RamboHost;   // default on CPU
++  RamboSamplingMode rmbsmp = RamboSamplingMode::RamboHost; // default on CPU
+ #endif
+   // Bridge emulation mode (NB Bridge implies RamboHost!)
+   bool bridge = false;
+@@ -918,7 +918,7 @@
+   wrkflwtxt += "/sse4";
+ #endif
+ #else
+-  wrkflwtxt += "/????";                                           // no path to this statement
++  wrkflwtxt += "/????"; // no path to this statement
+ #endif
+   // -- Has cxtype_v::operator[] bracket with non-const reference?
+ #if defined MGONGPU_CPPSIMD
+@@ -1143,7 +1143,7 @@
+ #elif defined MGONGPU_CUCXTYPE_STDCOMPLEX
+              << "\"STD::COMPLEX\"," << std::endl
+ #else
+-             << "\"???\"," << std::endl                           // no path to this statement...
++             << "\"???\"," << std::endl // no path to this statement...
+ #endif
+              << "\"RanNumb memory layout\": "
+              << "\"AOSOA[" << neppR << "]\""
+

@@ -1,1 +1,12 @@
-{}
+{
+    "11": {
+        "title": "Ghci",
+        "branch": "https://github.com/roiser/madgraph4gpu-generated-processes/tree/codegen-pr-11",
+        "url": "https://github.com/roiser/madgraph4gpu/pull/11",
+        "created": "2025-11-23T19:29:38Z",
+        "last_updated": "2026-01-16T15:18:21Z",
+        "wip": "false",
+        "num_commits": "29",
+        "author": "roiser"
+    }
+}
